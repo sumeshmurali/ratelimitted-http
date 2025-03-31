@@ -15,14 +15,19 @@ package main
 import (
     "net/http"
 
-    ratelimitted_http "github.com/sumeshmurali/ratelimitted-http/ratelimitted_http"
+    ratelimittedhttp "github.com/sumeshmurali/ratelimitted-http/ratelimitted_http"
 )
 
 func main() {
+    // create a domain ratelimiting policy
+    policy := ratelimittedhttp.NewDomainRatelimittingPolicy()
     // create a ratelimitter with a capacity ( burst ) and a rate of refil per second
     limiter := ratelimittedhttp.NewTokenBucketRatelimitter(10, 2)
+    // add the limit to domain ratelimitting policy
+	policy.AddDomainLimit("httpbun.com", limiter)
+    
     // use the limiter to create ratelimited client
-    client := ratelimittedhttp.NewRatelimittedHttpClient(limiter)
+    client := ratelimittedhttp.NewRatelimittedHttpClient(policy)
 
     // create a request
    	req, _ := http.NewRequest("GET", "https://httpbun.com/get", nil)

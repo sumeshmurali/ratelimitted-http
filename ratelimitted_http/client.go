@@ -7,18 +7,18 @@ import (
 
 type RatelimittedHttpClient struct {
 	client *http.Client
-	limiter Ratelimitter
+	policy RatelimittingPolicy
 }
 
 
-func NewRatelimittedHttpClient(limiter Ratelimitter) *RatelimittedHttpClient {
+func NewRatelimittedHttpClient(policy RatelimittingPolicy) *RatelimittedHttpClient {
 	return &RatelimittedHttpClient{
 		client: &http.Client{},
-		limiter: limiter,
+		policy: policy,
 	}
 }
 
 func (c *RatelimittedHttpClient) Do(req *http.Request) (*http.Response, error) {
-	c.limiter.Wait()
+	c.policy.GetLimiter(req).Wait()
 	return c.client.Do(req)
 }

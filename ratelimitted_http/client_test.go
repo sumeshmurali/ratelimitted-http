@@ -2,6 +2,7 @@ package ratelimittedhttp_test
 
 import (
 	"net/http"
+	"net/url"
 	"testing"
 	"time"
 
@@ -11,7 +12,8 @@ import (
 const HTTPBUN_ENDPOINT = "http://localhost:80"
 
 func TestClientAbleToSendRequests(t *testing.T) {
-	c := ratelimittedhttp.NewRatelimittedHttpClient(&ratelimittedhttp.NoOpRatelimitter{})
+	lim := &ratelimittedhttp.NoOpRatelimitter{}
+	c := ratelimittedhttp.NewRatelimittedHttpClient(ratelimittedhttp.NewGlobalRatelimiterPolicy(lim))
 	req, _ := http.NewRequest("GET", HTTPBUN_ENDPOINT + "/get", nil)
 	resp, err := c.Do(req)
 	if err != nil {
@@ -24,7 +26,10 @@ func TestClientAbleToSendRequests(t *testing.T) {
 
 
 func TestClientRespectsRateLimit(t *testing.T) {
-	c := ratelimittedhttp.NewRatelimittedHttpClient(ratelimittedhttp.NewTokenBucketRatelimitter(1, 1))
+	policy := ratelimittedhttp.NewDomainRatelimittingPolicy()
+	domain, _ := url.ParseRequestURI(HTTPBUN_ENDPOINT)
+	policy.AddDomainLimit(domain.Host, ratelimittedhttp.NewTokenBucketRatelimitter(1, 1))
+	c := ratelimittedhttp.NewRatelimittedHttpClient(policy)
 	req, _ := http.NewRequest("GET", HTTPBUN_ENDPOINT + "/get", nil)
 	_, err := c.Do(req)
 	if err != nil {
